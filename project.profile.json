@@ -1,0 +1,7 @@
+{
+  "profile": "hybrid-geospatial",
+  "deploy": "iis",
+  "runtime": "hybrid",
+  "loop_mode": "hybrid",
+  "knowledge_level": "heavy"
+}

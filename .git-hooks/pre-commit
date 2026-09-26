@@ -1,0 +1,54 @@
+#!/bin/bash
+# Pre-commit hook: blocks secrets from being committed.
+# Installed by create_project.py into .git/hooks/pre-commit.
+
+set -e
+
+STAGED=$(git diff --cached --name-only)
+ERRORS=0
+
+# ── Block .env from being committed ───────────────────────────────────────────
+for file in $STAGED; do
+    filename=$(basename "$file")
+    if [[ "$filename" == ".env" && "$file" != *".env.example"* ]]; then
+        echo "❌  BLOCKED: '$file' looks like a secrets file and must not be committed."
+        echo "    Run: git reset HEAD '$file'"
+        ERRORS=$((ERRORS + 1))
+    fi
+done
+
+# ── Block known credential filenames ─────────────────────────────────────────
+BLOCKED_NAMES=("token.json" "credentials.json" "service_account.json" "*.pem" "*.key" "*.p12")
+for file in $STAGED; do
+    filename=$(basename "$file")
+    for pattern in "${BLOCKED_NAMES[@]}"; do
+        if [[ "$filename" == $pattern ]]; then
+            echo "❌  BLOCKED: '$file' matches credential pattern '$pattern'."
+            echo "    Run: git reset HEAD '$file'"
+            ERRORS=$((ERRORS + 1))
+        fi
+    done
+done
+
+# ── Warn about .tmp/ files ────────────────────────────────────────────────────
+for file in $STAGED; do
+    if [[ "$file" == .tmp/* && "$file" != ".tmp/.gitkeep" ]]; then
+        echo "⚠️   WARNING: '$file' is inside .tmp/ — are you sure you want to commit it?"
+    fi
+done
+
+# ── AgentShield Security Scan ────────────────────────────────────────────────
+if [ -f "/Users/danielbally/Git/.agent/scripts/security_scan.sh" ]; then
+    if ! /Users/danielbally/Git/.agent/scripts/security_scan.sh . true; then
+        ERRORS=$((ERRORS + 1))
+    fi
+fi
+
+if [[ $ERRORS -gt 0 ]]; then
+    echo ""
+    echo "Commit blocked due to $ERRORS secret file(s) or security issues staged."
+    echo "Unstage them, address findings, and try again."
+    exit 1
+fi
+
+exit 0

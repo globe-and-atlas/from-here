@@ -1,0 +1,45 @@
+# Environment
+.env
+.venv/
+venv/
+__pycache__/
+*.pyc
+
+# Temp outputs (agent work)
+# Note: .tmp/.gitkeep is still tracked so the directory exists on clone.
+.tmp/*
+!.tmp/.gitkeep
+
+# Secrets
+*.pem
+*.key
+token.json
+credentials.json
+
+# IDE
+.idea/
+.vscode/
+*.swp
+
+# Claude Code — keep settings.local.json, ignore session data
+.claude/.claude.json
+.claude/todos/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Build / cache
+node_modules/
+node_modules_bad/
+dist/
+build/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+*.egg-info/
+
+# Project-specific (add as needed)
+# *.mp4
+# *.faiss
+# *.stl
