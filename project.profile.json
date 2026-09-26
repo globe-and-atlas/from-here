@@ -1,6 +1,6 @@
 {
   "profile": "hybrid-geospatial",
-  "deploy": "iis",
+  "deploy": "github-pages",
   "runtime": "hybrid",
   "loop_mode": "hybrid",
   "knowledge_level": "heavy"

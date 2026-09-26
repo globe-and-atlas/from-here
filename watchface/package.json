@@ -1,0 +1,27 @@
+{
+  "name": "from-here",
+  "author": "Globe & Atlas",
+  "version": "0.1.0",
+  "keywords": ["pebble-app"],
+  "private": true,
+  "dependencies": {
+    "@rebble/clay": "1.1.0"
+  },
+  "pebble": {
+    "displayName": "From Here",
+    "uuid": "76776e42-b8ba-46af-be93-fd67a66c5557",
+    "sdkVersion": "3",
+    "enableMultiJS": true,
+    "capabilities": ["configurable", "location"],
+    "targetPlatforms": ["emery"],
+    "watchapp": { "watchface": true },
+    "messageKeys": [
+      "Timeline", "OriginLat", "OriginLon", "Direction", "DefaultZoom",
+      "FrameZoom", "FrameKind", "FrameW", "FrameH", "FramePart", "FrameParts", "FrameData",
+      "FrameValidTo", "FrameLand", "FrameRoute", "FrameTowns", "FrameCorner",
+      "ReqZoom", "ReqMinute", "ReqTimeline",
+      "Setting_Direction", "Setting_UsePhone", "Setting_Lat", "Setting_Lon", "Setting_Zoom"
+    ],
+    "resources": { "media": [] }
+  }
+}

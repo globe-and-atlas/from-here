@@ -43,3 +43,8 @@ build/
 # *.mp4
 # *.faiss
 # *.stl
+
+# From Here
+data/raw/
+watchface/build/
+watchface/node_modules/
