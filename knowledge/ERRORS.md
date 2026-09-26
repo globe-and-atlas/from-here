@@ -22,3 +22,8 @@ Record deterministic errors, root causes, and fixes here.
 Not fixed (cosmetic, logged):
 - North of Svalbard, cells outside any marine polygon read "Open water".
 - A Day frame over a pole is a stretched equirectangular map.
+
+## 2026-09-26: verifier pass 2 (REJECT on one race), fixed
+- **Overlapping tile loads unpinned each other.** There was a single shared pin set, so a second load during a slow 210-tile Day load evicted the first load's tiles. Fix: per-key pin counts, released after the caller's synchronous draw returns, then trimmed back to the limit. Test: a Day frame drawn while another route loads matches a no-eviction reference (fails with the shared-pin bug reinstated).
+- **A duplicated part completed a frame early.** Fix: a received-parts bitmask instead of a counter.
+- **Memory:** decoded tiles drop their JSON rows, and pins release after each load, so the cache returns to its limit.

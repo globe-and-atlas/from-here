@@ -133,7 +133,8 @@ static void request_needed(void) {
 typedef struct {
   bool active;
   int zoom;
-  uint8_t kind, w, h, land, corner, parts, got;
+  uint8_t kind, w, h, land, corner, parts;
+  uint32_t received; /* bit per part: a part resent after a lost ack counts once */
   int16_t base, valid_to;
   int16_t route[ROUTE_SAMPLES * 2];
   char towns[sizeof(((Frame *)0)->towns)];
@@ -172,7 +173,7 @@ static void store_part(DictionaryIterator *iter, Tuple *zoom_t) {
     Tuple *t;
     st->active = true;
     st->zoom = zoom;
-    st->got = 0;
+    st->received = 0;
     st->parts = (t = dict_find(iter, MESSAGE_KEY_FrameParts)) ? t->value->int32 : 1;
     st->kind = (t = dict_find(iter, MESSAGE_KEY_FrameKind)) ? t->value->int32 : KIND_MAP;
     st->w = (t = dict_find(iter, MESSAGE_KEY_FrameW)) ? t->value->int32 : MAP_W;
@@ -196,15 +197,16 @@ static void store_part(DictionaryIterator *iter, Tuple *zoom_t) {
       st->towns[sizeof(st->towns) - 1] = '\0';
     }
   }
-  if (!st->active || st->zoom != zoom || part < 0 || part >= st->parts) return;
+  if (!st->active || st->zoom != zoom || part < 0 || part >= st->parts || part >= 32) return;
   int total = (st->w + 3) / 4 * st->h;
   int offset = part * CHUNK;
   int length = data_t->length;
   if (offset >= total) return;
   if (offset + length > total) length = total - offset;
   memcpy(st->data + offset, (const uint8_t *)data_t->value, length);
-  st->got += 1;
-  if (st->got >= st->parts) commit_stage();
+  st->received |= (uint32_t)1 << part;
+  uint32_t all = st->parts >= 32 ? 0xFFFFFFFFu : (((uint32_t)1 << st->parts) - 1);
+  if (st->parts > 0 && (st->received & all) == all) commit_stage();
 }
 
 static void store_timeline(DictionaryIterator *iter) {

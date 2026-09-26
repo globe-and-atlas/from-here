@@ -30,6 +30,7 @@ function decode(tile) {
     }
   }
   tile.grid = grid;
+  delete tile.rows; // the decoded grid replaces the run-length JSON
   // Global ids let renders compare labels across tile edges.
   tile.keys = tile.names.map(function (entry) { return entry[0] + '|' + entry[1]; });
   return tile;
@@ -41,6 +42,7 @@ function TileCache(loader, limit) {
   this.limit = limit || 40;
   this.tiles = {};
   this.order = [];
+  this.pins = {};
 }
 
 TileCache.prototype.get = function (key) {
@@ -51,18 +53,25 @@ TileCache.prototype.get = function (key) {
 // connection pools and a single dropped tile would sink the whole frame.
 var PARALLEL = 6;
 
+// Each ensure() pins its tiles (a count per key, so overlapping loads cannot unpin each other)
+// until its callback has returned: callers draw synchronously inside done(), so the tiles they
+// read cannot be evicted mid-frame. Unpinned tiles are then trimmed back to the limit.
 TileCache.prototype.ensure = function (keys, done) {
   var self = this;
-  // Tiles this request needs are pinned: evicting them while the rest load would draw them as ocean.
-  self.pinned = {};
-  keys.forEach(function (k) { self.pinned[k] = true; });
-  var queue = keys.filter(function (k, i) { return !self.tiles[k] && keys.indexOf(k) === i; })
-    .map(function (k) { return { key: k, tries: 0 }; });
-  if (!queue.length) { done(null); return; }
+  var unique = keys.filter(function (k, i) { return keys.indexOf(k) === i; });
+  unique.forEach(function (k) { self.pins[k] = (self.pins[k] || 0) + 1; });
+  function finish(err) {
+    try { done(err); } finally {
+      unique.forEach(function (k) { if (--self.pins[k] <= 0) delete self.pins[k]; });
+      self.trim();
+    }
+  }
+  var queue = unique.filter(function (k) { return !self.tiles[k]; }).map(function (k) { return { key: k, tries: 0 }; });
+  if (!queue.length) { finish(null); return; }
   var active = 0, failed = null, finished = false;
   function next() {
     if (finished) return;
-    if (!queue.length && active === 0) { finished = true; done(failed); return; }
+    if (!queue.length && active === 0) { finished = true; finish(failed); return; }
     while (active < PARALLEL && queue.length) {
       (function (job) {
         active += 1;
@@ -80,12 +89,16 @@ TileCache.prototype.ensure = function (keys, done) {
 };
 
 TileCache.prototype.put = function (key, tile) {
+  if (!this.tiles[key]) this.order.push(key);
   this.tiles[key] = tile;
-  this.order.push(key);
-  // Evict the oldest unpinned tiles; pinned ones may push the cache over its limit until the next request.
+  this.trim();
+};
+
+// Evict the oldest unpinned tiles until within the limit; pinned tiles may exceed it briefly.
+TileCache.prototype.trim = function () {
   for (var i = 0; this.order.length > this.limit && i < this.order.length;) {
     var old = this.order[i];
-    if (this.pinned && this.pinned[old]) { i++; continue; }
+    if (this.pins[old]) { i++; continue; }
     this.order.splice(i, 1);
     delete this.tiles[old];
   }

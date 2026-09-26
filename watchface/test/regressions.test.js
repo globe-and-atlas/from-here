@@ -66,3 +66,20 @@ test('frames carry the minute they were drawn for', function (t, done) {
     });
   });
 });
+
+test('overlapping tile loads keep each other\'s tiles (per-request pins)', function (t, done) {
+  var tromso = route.roundOrigin(69.65, 18.96);
+  function slowLoader(key, cb) { setTimeout(function () { helpers.fsLoader(key, cb); }, 5 + (key.length * 7) % 20); }
+  var alone = new tiles.TileCache(slowLoader, 5000); // reference: nothing is ever evicted
+  frames.build({ cache: alone, overview: overview, origin: tromso, direction: 0, runs: [] }, render.ZOOM.DAY, 600, function (e1, reference) {
+    var busy = new tiles.TileCache(slowLoader, 120);
+    frames.build({ cache: busy, overview: overview, origin: tromso, direction: 0, runs: [] }, render.ZOOM.DAY, 600, function (e2, frame) {
+      assert.strictEqual(frame.landPct, reference.landPct, 'Day frame land ' + frame.landPct + '% while another load ran vs ' + reference.landPct + '% alone');
+      setTimeout(function () {
+        assert.ok(busy.order.length <= 120 || Object.keys(busy.pins).length > 0, 'cache trims back to its limit once loads finish');
+        done();
+      }, 800);
+    });
+    setTimeout(function () { busy.ensure(timeline.keysForRoute(route.roundOrigin(-33.87, 151.21), 7), function () {}); }, 30);
+  });
+});

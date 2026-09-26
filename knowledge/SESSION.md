@@ -28,3 +28,4 @@
 - 2026-09-26 17:30 — Watchface complete in the emulator. Tests: pytest 42/42, node 19/19, emulator 13/13, CloudPebble simulation drops nothing. Fixed: Day tile columns, fetch burst, route clipping, south-edge row, offline home persistence. README and knowledge written. Next: verifier, then public repo and Pages.
 - 2026-09-26 16:11 — commit: From Here watchface: phone renderer, watch app, emulator checks | .gitignore,README.md,directives/build_from_here.md,docs/.nojekyll,execution/cloudpebble.py
 - 2026-09-26 18:40 — Verifier pass 1 REJECTED with 3 major and 4 minor defects. All fixed with regression tests (node 23/23, pytest 43/43, emulator 13/13, CloudPebble clean). Re-verification next.
+- 2026-09-26 16:21 — commit: Fix verifier findings: tile pinning, frame base minute, staged frames | docs/tiles/-10_-35.json,docs/tiles/-10_-40.json,docs/tiles/-10_-45.json,docs/tiles/-10_-50.json,docs/tiles/-10_-55.json
