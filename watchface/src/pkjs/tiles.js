@@ -77,7 +77,10 @@ TileCache.prototype.ensure = function (keys, done) {
         active += 1;
         self.loader(job.key, function (err, tile) {
           active -= 1;
-          if (!err) self.put(job.key, decode(tile));
+          if (!err) {
+            try { self.put(job.key, decode(tile)); } catch (e) { err = e; job.tries = 1; } // malformed: no retry
+          }
+          if (!err) { /* stored */ }
           else if (job.tries < 1) { job.tries += 1; queue.push(job); }
           else failed = failed || err;
           next();

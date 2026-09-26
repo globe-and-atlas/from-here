@@ -33,7 +33,9 @@ function getJson(url, callback) {
   req.timeout = 20000;
   req.onload = function () {
     if (req.status !== 200) { callback(new Error('HTTP ' + req.status + ' ' + url)); return; }
-    try { callback(null, JSON.parse(req.responseText)); } catch (e) { callback(e); }
+    var json;
+    try { json = JSON.parse(req.responseText); } catch (e) { callback(e); return; }
+    callback(null, json); // outside the try: an error in the caller must not trigger a second callback
   };
   req.onerror = function () { callback(new Error('network ' + url)); };
   req.ontimeout = function () { callback(new Error('timeout ' + url)); };

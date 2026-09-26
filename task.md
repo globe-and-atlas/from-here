@@ -12,7 +12,7 @@ Directive: `directives/build_from_here.md` (full validation contract there).
 - [x] The watchface builds for emery with no warnings from our sources.
 - [x] Emulator checks: Hour view, flick cycle, 60 s revert, open-water Day view, offline.
 - [x] CloudPebble import simulation drops no files.
-- [ ] A fresh verifier approves.
+- [x] A fresh verifier approves (three passes; approved 2026-09-26 after fixes).
 - [ ] `globe-and-atlas/from-here` is public on GitHub.
 - [ ] GitHub Pages serves `docs/` (tiles reachable at the Pages URL).
 - [ ] Tested on a physical Pebble Time 2: legibility, flick, battery over a day.

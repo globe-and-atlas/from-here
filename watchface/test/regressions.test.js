@@ -83,3 +83,11 @@ test('overlapping tile loads keep each other\'s tiles (per-request pins)', funct
     setTimeout(function () { busy.ensure(timeline.keysForRoute(route.roundOrigin(-33.87, 151.21), 7), function () {}); }, 30);
   });
 });
+
+test('a malformed tile fails the request instead of hanging it', function (t, done) {
+  var cache = new tiles.TileCache(function (key, cb) { cb(null, key === 'bad' ? { n: 250, names: null } : { n: 1, deg: 5, lat0: 0, lon0: 0, fill: 0, names: [['x', 0, -1]], countries: [], towns: [] }); }, 10);
+  cache.ensure(['bad', 'ok'], function (err) {
+    assert.ok(err, 'error reported');
+    setTimeout(function () { assert.deepStrictEqual(cache.pins, {}); done(); }, 10);
+  });
+});
