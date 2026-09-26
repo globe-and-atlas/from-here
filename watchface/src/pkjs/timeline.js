@@ -33,8 +33,8 @@ function labelAt(cache, lat, lon) {
       if (score > bestScore) { best = t; bestScore = score; }
     });
     if (best) {
-      var region = REGION_TOWN_ADMIN[best.cc] ? best.admin : place.country;
-      if (place.country === 'United States of America') region = best.admin;
+      // The town's own country: a point in France can be nearest a town in Luxembourg.
+      var region = REGION_TOWN_ADMIN[best.cc] ? best.admin : (best.country || place.country);
       return { label: region ? best.name + ', ' + region : best.name, land: true, town: best.name };
     }
   }

@@ -17,7 +17,8 @@ var AUTO = 8;
 var DEV_HOME = { lat: 30.08, lon: -95.42 }; // emulator only, when it has no location
 
 var clay = new Clay(config, null, { autoHandleEvents: false });
-var state = { origin: null, direction: 1, zoom: 1, runs: [], overview: null, generation: 0 };
+var state = { origin: null, direction: 1, zoom: 1, runs: [], overview: null, generation: 0, failedAt: 0 };
+var RETRY_MS = 600000; // after a failed location or tile fetch, wait 10 minutes before trying again
 var cache = new tiles.TileCache(loader, 80);
 
 function isEmulator() {
@@ -99,6 +100,7 @@ function sendFrame(frame) {
       msg[keys.FrameRoute] = int16Bytes(frame.route);
       msg[keys.FrameTowns] = frame.towns;
       msg[keys.FrameCorner] = frame.corner;
+      msg[keys.FrameBase] = frame.base;
     }
     send(msg);
   }
@@ -142,10 +144,12 @@ function rebuild(origin) {
       if (err) {
         console.log('Tiles unavailable, sending home only: ' + err.message);
         state.runs = [];
+        state.failedAt = Date.now();
         sendTimeline(false);
         return;
       }
       state.runs = timeline.build(cache, origin, state.direction).runs;
+      state.failedAt = 0;
       sendTimeline();
     });
   });
@@ -157,15 +161,17 @@ function manualOrigin(s) {
   return route.roundOrigin(lat, lon);
 }
 
-function refresh() {
+function refresh(force) {
+  if (!force && Date.now() - state.failedAt < RETRY_MS) return;
   var s = settings();
   var usePhone = s.Setting_UsePhone === undefined ? true : !!s.Setting_UsePhone;
   var fallback = manualOrigin(s) || stored('fh-origin') || (isEmulator() ? route.roundOrigin(DEV_HOME.lat, DEV_HOME.lon) : null);
-  if (!usePhone) { if (fallback) rebuild(fallback); return; }
+  if (!usePhone) { if (fallback) rebuild(fallback); else state.failedAt = Date.now(); return; }
   navigator.geolocation.getCurrentPosition(function (pos) {
     rebuild(route.roundOrigin(pos.coords.latitude, pos.coords.longitude));
   }, function () {
     if (fallback) rebuild(fallback); // without any home the watch shows the time only
+    else state.failedAt = Date.now();
   }, { enableHighAccuracy: false, maximumAge: 3600000, timeout: 15000 });
 }
 
@@ -178,18 +184,20 @@ function onRequest(payload) {
   var ctx = { cache: cache, overview: state.overview, origin: state.origin, direction: state.direction, runs: state.runs };
   var zoom = payload[keys.ReqZoom], minute = payload[keys.ReqMinute] || 0;
   if ((zoom === render.ZOOM.GLOBE || zoom === render.ZOOM.INSET) && !state.overview) return;
+  var ticket = state.generation;
   frames.build(ctx, zoom, minute, function (err, frame) {
     if (err) { console.log('Frame failed: ' + err.message); return; }
+    if (ticket !== state.generation) return; // settings changed while drawing; the watch will ask again
     sendFrame(frame);
   });
 }
 
-Pebble.addEventListener('ready', function () { refresh(); });
+Pebble.addEventListener('ready', function () { refresh(true); });
 Pebble.addEventListener('appmessage', function (e) { onRequest(e.payload || {}); });
 Pebble.addEventListener('showConfiguration', function () { Pebble.openURL(clay.generateUrl()); });
 Pebble.addEventListener('webviewclosed', function (e) {
   if (!e || !e.response || e.response === 'CANCELLED') return;
   try { clay.getSettings(e.response); } catch (_) { return; }
-  refresh();
+  refresh(true);
 });
 setInterval(refresh, 6 * 3600000); // pick up a new home a few times a day

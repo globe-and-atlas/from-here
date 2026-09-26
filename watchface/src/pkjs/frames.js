@@ -12,7 +12,7 @@ function build(ctx, zoom, minute, done) {
     var radius = zoom === Z.INSET ? size / 2 - 1 : 70;
     var projection = render.orthographic({ lat: here.lat, lon: here.lon }, radius, w, h);
     var image = render.renderGlobe(ctx.overview, projection);
-    done(null, finish(ctx, zoom, projection, image, Math.min(1439, minute + 60), []));
+    done(null, finish(ctx, zoom, projection, image, Math.min(1439, minute + 60), [], minute));
     return;
   }
   var framed = zoom === Z.DAY ? render.dayFrame(ctx.origin, ctx.direction) : render.localFrame(ctx.origin, ctx.direction, minute, zoom);
@@ -27,13 +27,14 @@ function build(ctx, zoom, minute, done) {
       var reserved = render.reservedBoxes(ctx.origin, ctx.direction, p, minute);
       towns = render.frameTowns(ctx.cache, p, zoom, etas, reserved);
     }
-    done(null, finish(ctx, zoom, p, picture, framed.validTo, towns));
+    done(null, finish(ctx, zoom, p, picture, framed.validTo, towns, zoom === Z.DAY ? 0 : minute));
   });
 }
 
-function finish(ctx, zoom, projection, image, validTo, towns) {
+function finish(ctx, zoom, projection, image, validTo, towns, minute) {
   return {
     zoom: zoom,
+    base: minute, // the watch treats the frame as current from here to validTo
     kind: projection.kind,
     w: projection.w,
     h: projection.h,

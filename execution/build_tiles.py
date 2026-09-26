@@ -157,7 +157,19 @@ def country_short(name: str) -> str:
     return COUNTRY_SHORT.get(name, name)
 
 
-def load_towns() -> list[tuple[str, float, float, int, str, str]]:
+def country_names_by_iso() -> dict[str, str]:
+    """ISO alpha-2 -> short country name, so a town names its own country (not the point's)."""
+    names = {}
+    for f in json.loads((RAW / "ne_50m_admin_0_countries.geojson").read_text())["features"]:
+        p = f["properties"]
+        iso = p.get("ISO_A2") if p.get("ISO_A2") not in (None, "-99") else p.get("ISO_A2_EH")
+        if iso and iso != "-99":
+            names[iso] = country_short(ascii_name(p.get("NAME") or p.get("ADMIN") or ""))
+    return names
+
+
+def load_towns() -> list[tuple[str, float, float, int, str, str, str]]:
+    countries = country_names_by_iso()
     admin1 = {}
     for line in (RAW / "admin1CodesASCII.txt").read_text(encoding="utf-8").splitlines():
         parts = line.split("\t")
@@ -173,7 +185,7 @@ def load_towns() -> list[tuple[str, float, float, int, str, str]]:
             name = ascii_name(c[2] or c[1])
             if not name:
                 continue
-            towns.append((name, float(c[4]), float(c[5]), pop, c[8], ascii_name(admin1.get(f"{c[8]}.{c[10]}", ""))))
+            towns.append((name, float(c[4]), float(c[5]), pop, c[8], ascii_name(admin1.get(f"{c[8]}.{c[10]}", "")), countries.get(c[8], "")))
     return towns
 
 
@@ -238,7 +250,7 @@ def build_tile(key: tuple[int, int]) -> tuple[str, int, int]:
             lengths = np.diff(np.concatenate([starts, [N]]))
             rows.append([int(v) for pair in zip(lengths, row[starts]) for v in pair])
         tile["rows"] = rows
-    tile["towns"] = [[n, round(la, 4), round(lo, 4), p, cc, a1] for n, la, lo, p, cc, a1 in TOWNS
+    tile["towns"] = [[n, round(la, 4), round(lo, 4), p, cc, a1, cn] for n, la, lo, p, cc, a1, cn in TOWNS
                      if lat0 <= la < lat0 + TILE_DEG and lon0 <= lo < lon0 + TILE_DEG]
     path = DOCS / "tiles" / f"{lat0}_{lon0}.json"
     text = json.dumps(tile, separators=(",", ":"))
@@ -267,7 +279,7 @@ def build_overview() -> None:
                 if c1 > c0:
                     land[r, c0:c1] ^= 1
     towns = np.zeros((180, 360), dtype=np.int32)
-    for _, la, lo, _, _, _ in TOWNS:
+    for _, la, lo, _, _, _, _ in TOWNS:
         towns[min(179, int(90 - la)), min(359, int(lo + 180))] += 1
     rle = []
     for row in land:

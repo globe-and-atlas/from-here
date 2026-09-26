@@ -14,7 +14,8 @@ function tileKey(lat, lon) {
 
 function decode(tile) {
   var n = tile.n;
-  var grid = new Uint16Array(n * n);
+  // Most tiles have under 256 names; 8-bit grids halve memory (a Day frame can need 200+ tiles).
+  var grid = tile.names.length <= 256 ? new Uint8Array(n * n) : new Uint16Array(n * n);
   if (tile.fill !== undefined) {
     for (var i = 0; i < grid.length; i++) grid[i] = tile.fill;
   } else {
@@ -52,6 +53,9 @@ var PARALLEL = 6;
 
 TileCache.prototype.ensure = function (keys, done) {
   var self = this;
+  // Tiles this request needs are pinned: evicting them while the rest load would draw them as ocean.
+  self.pinned = {};
+  keys.forEach(function (k) { self.pinned[k] = true; });
   var queue = keys.filter(function (k, i) { return !self.tiles[k] && keys.indexOf(k) === i; })
     .map(function (k) { return { key: k, tries: 0 }; });
   if (!queue.length) { done(null); return; }
@@ -78,7 +82,13 @@ TileCache.prototype.ensure = function (keys, done) {
 TileCache.prototype.put = function (key, tile) {
   this.tiles[key] = tile;
   this.order.push(key);
-  while (this.order.length > this.limit) delete this.tiles[this.order.shift()];
+  // Evict the oldest unpinned tiles; pinned ones may push the cache over its limit until the next request.
+  for (var i = 0; this.order.length > this.limit && i < this.order.length;) {
+    var old = this.order[i];
+    if (this.pinned && this.pinned[old]) { i++; continue; }
+    this.order.splice(i, 1);
+    delete this.tiles[old];
+  }
 };
 
 // Returns {label, land, country, key} or null when the tile is not loaded.
@@ -115,7 +125,7 @@ TileCache.prototype.townsNear = function (lat, lon, km) {
       for (var i = 0; i < tile.towns.length; i++) {
         var t = tile.towns[i];
         var d = haversine(lat, lon, t[1], t[2]);
-        if (d <= km) found.push({ name: t[0], lat: t[1], lon: t[2], pop: t[3], cc: t[4], admin: t[5], km: d });
+        if (d <= km) found.push({ name: t[0], lat: t[1], lon: t[2], pop: t[3], cc: t[4], admin: t[5], country: t[6] || '', km: d });
       }
     }
   }

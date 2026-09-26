@@ -18,7 +18,7 @@
     "messageKeys": [
       "Timeline", "OriginLat", "OriginLon", "Direction", "DefaultZoom",
       "FrameZoom", "FrameKind", "FrameW", "FrameH", "FramePart", "FrameParts", "FrameData",
-      "FrameValidTo", "FrameLand", "FrameRoute", "FrameTowns", "FrameCorner",
+      "FrameValidTo", "FrameLand", "FrameRoute", "FrameTowns", "FrameCorner", "FrameBase",
       "ReqZoom", "ReqMinute", "ReqTimeline",
       "Setting_Direction", "Setting_UsePhone", "Setting_Lat", "Setting_Lon", "Setting_Zoom"
     ],

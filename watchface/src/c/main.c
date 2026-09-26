@@ -128,71 +128,92 @@ static void request_needed(void) {
   }
 }
 
+/* Frames assemble here and replace the displayed one only when complete, so the map never blanks
+ * while a refresh arrives and a dropped first chunk cannot overwrite the picture on screen. */
+typedef struct {
+  bool active;
+  int zoom;
+  uint8_t kind, w, h, land, corner, parts, got;
+  int16_t base, valid_to;
+  int16_t route[ROUTE_SAMPLES * 2];
+  char towns[sizeof(((Frame *)0)->towns)];
+  uint8_t data[MAP_W / 4 * MAP_H];
+} Stage;
+static Stage *s_stage;
+
+static void commit_stage(void) {
+  Stage *st = s_stage;
+  Frame *f = &s_frames[st->zoom];
+  if (f->bitmap && (f->w != st->w || f->h != st->h)) { gbitmap_destroy(f->bitmap); f->bitmap = NULL; }
+  if (!f->bitmap) f->bitmap = gbitmap_create_blank(GSize(st->w, st->h), GBitmapFormat2BitPalette);
+  st->active = false;
+  if (!f->bitmap) return;
+  gbitmap_set_palette(f->bitmap, st->kind == KIND_GLOBE ? s_globe_palette : s_map_palette, false);
+  int packed = (st->w + 3) / 4;
+  int stride = gbitmap_get_bytes_per_row(f->bitmap);
+  uint8_t *pixels = gbitmap_get_data(f->bitmap);
+  for (int row = 0; row < st->h; row++) memcpy(pixels + row * stride, st->data + row * packed, packed);
+  f->kind = st->kind; f->w = st->w; f->h = st->h; f->land = st->land; f->corner = st->corner;
+  f->base = st->base; f->valid_to = st->valid_to;
+  memcpy(f->route, st->route, sizeof(f->route));
+  memcpy(f->towns, st->towns, sizeof(f->towns));
+  f->ready = true;
+  if (s_pending == st->zoom) s_pending = -1;
+}
+
 static void store_part(DictionaryIterator *iter, Tuple *zoom_t) {
   int zoom = zoom_t->value->int32;
-  if (zoom < 0 || zoom >= ZOOM_COUNT) return;
-  Frame *f = &s_frames[zoom];
   Tuple *part_t = dict_find(iter, MESSAGE_KEY_FramePart);
   Tuple *data_t = dict_find(iter, MESSAGE_KEY_FrameData);
-  if (!part_t || !data_t) return;
+  if (!s_stage || zoom < 0 || zoom >= ZOOM_COUNT || !part_t || !data_t) return;
+  Stage *st = s_stage;
   int part = part_t->value->int32;
   if (part == 0) {
     Tuple *t;
-    f->ready = false;
-    f->got = 0;
-    f->parts = (t = dict_find(iter, MESSAGE_KEY_FrameParts)) ? t->value->int32 : 1;
-    f->kind = (t = dict_find(iter, MESSAGE_KEY_FrameKind)) ? t->value->int32 : KIND_MAP;
-    uint8_t w = (t = dict_find(iter, MESSAGE_KEY_FrameW)) ? t->value->int32 : MAP_W;
-    uint8_t h = (t = dict_find(iter, MESSAGE_KEY_FrameH)) ? t->value->int32 : MAP_H;
-    f->valid_to = (t = dict_find(iter, MESSAGE_KEY_FrameValidTo)) ? t->value->int32 : 0;
-    f->land = (t = dict_find(iter, MESSAGE_KEY_FrameLand)) ? t->value->int32 : 100;
-    f->corner = (t = dict_find(iter, MESSAGE_KEY_FrameCorner)) ? t->value->int32 : 0;
-    f->base = minute_of_day();
-    if (f->bitmap && (f->w != w || f->h != h)) { gbitmap_destroy(f->bitmap); f->bitmap = NULL; }
-    f->w = w; f->h = h;
-    if (!f->bitmap) {
-      f->bitmap = gbitmap_create_blank(GSize(w, h), GBitmapFormat2BitPalette);
-      if (!f->bitmap) return;
-      gbitmap_set_palette(f->bitmap, f->kind == KIND_GLOBE ? s_globe_palette : s_map_palette, false);
-    } else {
-      gbitmap_set_palette(f->bitmap, f->kind == KIND_GLOBE ? s_globe_palette : s_map_palette, false);
-    }
+    st->active = true;
+    st->zoom = zoom;
+    st->got = 0;
+    st->parts = (t = dict_find(iter, MESSAGE_KEY_FrameParts)) ? t->value->int32 : 1;
+    st->kind = (t = dict_find(iter, MESSAGE_KEY_FrameKind)) ? t->value->int32 : KIND_MAP;
+    st->w = (t = dict_find(iter, MESSAGE_KEY_FrameW)) ? t->value->int32 : MAP_W;
+    st->h = (t = dict_find(iter, MESSAGE_KEY_FrameH)) ? t->value->int32 : MAP_H;
+    st->valid_to = (t = dict_find(iter, MESSAGE_KEY_FrameValidTo)) ? t->value->int32 : 0;
+    st->land = (t = dict_find(iter, MESSAGE_KEY_FrameLand)) ? t->value->int32 : 100;
+    st->corner = (t = dict_find(iter, MESSAGE_KEY_FrameCorner)) ? t->value->int32 : 0;
+    /* The minute the phone drew it for: a reply landing after midnight must not look fresh. */
+    st->base = (t = dict_find(iter, MESSAGE_KEY_FrameBase)) ? t->value->int32 : minute_of_day();
+    if (st->w > MAP_W || st->h > MAP_H) { st->active = false; return; }
+    for (int i = 0; i < ROUTE_SAMPLES * 2; i++) st->route[i] = OFFSCREEN;
     if ((t = dict_find(iter, MESSAGE_KEY_FrameRoute))) {
       int count = t->length / 2;
+      if (count > ROUTE_SAMPLES * 2) count = ROUTE_SAMPLES * 2;
       const uint8_t *bytes = (const uint8_t *)t->value;
-      for (int i = 0; i < ROUTE_SAMPLES * 2; i++) {
-        f->route[i] = i < count ? (int16_t)(bytes[2 * i] | (bytes[2 * i + 1] << 8)) : OFFSCREEN;
-      }
+      for (int i = 0; i < count; i++) st->route[i] = (int16_t)(bytes[2 * i] | (bytes[2 * i + 1] << 8));
     }
-    f->towns[0] = '\0';
+    st->towns[0] = '\0';
     if ((t = dict_find(iter, MESSAGE_KEY_FrameTowns))) {
-      strncpy(f->towns, t->value->cstring, sizeof(f->towns) - 1);
-      f->towns[sizeof(f->towns) - 1] = '\0';
+      strncpy(st->towns, t->value->cstring, sizeof(st->towns) - 1);
+      st->towns[sizeof(st->towns) - 1] = '\0';
     }
   }
-  if (!f->bitmap) return;
-  /* Phone packs rows tightly (w/4 bytes); the bitmap may pad its rows. */
-  int packed = (f->w + 3) / 4;
-  int stride = gbitmap_get_bytes_per_row(f->bitmap);
-  uint8_t *pixels = gbitmap_get_data(f->bitmap);
-  const uint8_t *bytes = (const uint8_t *)data_t->value;
-  for (int k = 0; k < (int)data_t->length; k++) {
-    int g = part * CHUNK + k;
-    int row = g / packed;
-    if (row >= f->h) break;
-    pixels[row * stride + g % packed] = bytes[k];
-  }
-  f->got += 1;
-  if (f->got >= f->parts) {
-    f->ready = true;
-    if (s_pending == zoom) s_pending = -1;
-  }
+  if (!st->active || st->zoom != zoom || part < 0 || part >= st->parts) return;
+  int total = (st->w + 3) / 4 * st->h;
+  int offset = part * CHUNK;
+  int length = data_t->length;
+  if (offset >= total) return;
+  if (offset + length > total) length = total - offset;
+  memcpy(st->data + offset, (const uint8_t *)data_t->value, length);
+  st->got += 1;
+  if (st->got >= st->parts) commit_stage();
 }
 
 static void store_timeline(DictionaryIterator *iter) {
   Tuple *t;
   Tuple *lat_t = dict_find(iter, MESSAGE_KEY_OriginLat), *lon_t = dict_find(iter, MESSAGE_KEY_OriginLon);
   if (lat_t && lon_t) {
+    if (lat_t->value->int32 != s_origin_lat || lon_t->value->int32 != s_origin_lon) {
+      for (int z = 0; z < ZOOM_COUNT; z++) s_frames[z].ready = false; /* new home, new route */
+    }
     s_origin_lat = lat_t->value->int32;
     s_origin_lon = lon_t->value->int32;
     s_have_origin = true;
@@ -455,6 +476,8 @@ static void init(void) {
   window_set_background_color(s_window, GColorBlack);
   window_set_window_handlers(s_window, (WindowHandlers){.load = window_load, .unload = window_unload});
   window_stack_push(s_window, true);
+  s_stage = malloc(sizeof(Stage));
+  if (s_stage) s_stage->active = false;
   app_message_register_inbox_received(inbox);
   app_message_register_outbox_failed(outbox_failed);
   app_message_open(app_message_inbox_size_maximum(), 128);
@@ -466,6 +489,7 @@ static void deinit(void) {
   accel_tap_service_unsubscribe();
   tick_timer_service_unsubscribe();
   for (int z = 0; z < ZOOM_COUNT; z++) if (s_frames[z].bitmap) gbitmap_destroy(s_frames[z].bitmap);
+  free(s_stage);
   window_destroy(s_window);
 }
 

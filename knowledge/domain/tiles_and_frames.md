@@ -9,7 +9,7 @@ timestamp: "2026-09-26T17:30:00-05:00"
 - Covers `[lat0, lat0+5) × [lon0, lon0+5)`: a 250×250 grid at 0.02°, row 0 at the north edge.
 - `names`: `[label, isLand, countryIndex]`. `countries`: the tile's country names.
 - `rows`: run-length pairs `[len, id, ...]`. A uniform tile has `fill` instead.
-- `towns`: `[asciiName, lat, lon, pop, cc, admin1]`.
+- `towns`: `[asciiName, lat, lon, pop, cc, admin1, countryName]`. The country is the town's own, not the labelled point's.
 - **Paint order:** open water < sea < country < state (only on country land) < lake.
 - **Labels:**
   - US states read alone ("Ohio").

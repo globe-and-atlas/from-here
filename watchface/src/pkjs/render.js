@@ -233,6 +233,13 @@ function localFrame(origin, direction, minute, zoom) {
   var next = route.pointAt(origin, direction, Math.min(1440, minute + 1));
   var speed = Math.max(0.3, tiles.haversine(here.lat, here.lon, next.lat, next.lon)); // km per minute
   var lead = Math.round(0.25 * MAP_W * kmPerPx / speed);
+  var framed = centredFrame(origin, direction, minute, lead, kmPerPx);
+  // Near a pole the lead can land over the top, leaving the dot off-frame: centre on the dot.
+  if (framed.validTo === minute) framed = centredFrame(origin, direction, minute, 0, kmPerPx);
+  return framed;
+}
+
+function centredFrame(origin, direction, minute, lead, kmPerPx) {
   var centre = route.pointAt(origin, direction, Math.min(1440, minute + lead));
   var projection = localProjection({ lat: centre.lat, lon: centre.lon }, kmPerPx, MAP_W, MAP_H);
   var validTo = minute;
