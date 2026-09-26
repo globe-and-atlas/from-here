@@ -42,27 +42,30 @@ test('packing puts the leftmost pixel in the most significant bits', function ()
   assert.strictEqual(packed[0], 0xC6); // 11 00 01 10
 });
 
-test('town labels never overlap each other, the inset or the dot', function (t, done) {
+test('town labels never overlap each other, the inset, the dot or the route', function (t, done) {
   context(function (ctx) {
     var zooms = [render.ZOOM.NOW, render.ZOOM.HOUR];
     var minutes = [60, 300, 420, 642, 730, 870, 960];
     var pending = zooms.length * minutes.length;
+    var placedTotal = 0;
     zooms.forEach(function (zoom) {
       minutes.forEach(function (minute) {
         var framed = render.localFrame(SPRING, NE, minute, zoom);
         ctx.cache.ensure(render.keysForFrame(framed.projection), function (err) {
           assert.ifError(err);
-          var here = route.pointAt(SPRING, NE, minute);
-          var dot = framed.projection.xy(here.lat, here.lon);
-          var reserved = [render.insetBox(NE), [dot[0] - 8, dot[1] - 8, dot[0] + 8, dot[1] + 8]];
+          var reserved = render.reservedBoxes(SPRING, NE, framed.projection, minute);
           var towns = render.frameTowns(ctx.cache, framed.projection, zoom, {}, reserved);
+          placedTotal += towns.length;
           var boxes = towns.map(boxOf);
           boxes.forEach(function (a, i) {
             reserved.forEach(function (r) { assert.ok(a[2] < r[0] || a[0] > r[2] || a[3] < r[1] || a[1] > r[3], 'label clears reserved box'); });
             boxes.slice(i + 1).forEach(function (b) { assert.ok(a[2] < b[0] || a[0] > b[2] || a[3] < b[1] || a[1] > b[3], 'labels do not overlap'); });
           });
           pending -= 1;
-          if (pending === 0) done();
+          if (pending === 0) {
+            assert.ok(placedTotal >= 10, 'the check placed ' + placedTotal + ' labels, so it is not vacuous');
+            done();
+          }
         });
       });
     });
@@ -113,6 +116,25 @@ test('dump golden Hour frame land mask', function (t, done) {
       var out = { center: p.center, kmPerPx: p.kmPerPx, w: p.w, h: p.h, land: Array.prototype.map.call(picture.pixels, function (v) { return v === 0 ? 0 : 1; }) };
       fs.writeFileSync(path.join(__dirname, '..', '..', '.tmp', 'golden_hour_frame.json'), JSON.stringify(out));
       done();
+    });
+  });
+});
+
+test('every pixel of Day, Hour and Now frames has its tile loaded', function (t, done) {
+  var frames = [render.dayFrame(SPRING, NE), render.localFrame(SPRING, NE, 642, render.ZOOM.HOUR), render.localFrame(SPRING, NE, 642, render.ZOOM.NOW),
+    render.dayFrame(route.roundOrigin(69.65, 18.96), 0), render.dayFrame(route.roundOrigin(-33.87, 151.21), 7)];
+  var pending = frames.length;
+  frames.forEach(function (framed) {
+    helpers.cacheFor(render.keysForFrame(framed.projection), function (err, cache) {
+      assert.ifError(err);
+      for (var y = 0; y < framed.projection.h; y++) {
+        for (var x = 0; x < framed.projection.w; x++) {
+          var ll = framed.projection.inverse(x, y);
+          assert.ok(cache.lookup(ll[0], ll[1]), 'tile missing at pixel ' + x + ',' + y);
+        }
+      }
+      pending -= 1;
+      if (pending === 0) done();
     });
   });
 });

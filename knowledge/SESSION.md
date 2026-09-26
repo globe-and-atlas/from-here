@@ -24,3 +24,5 @@
 - 2026-09-26 15:39 — commit: chore: initialize project from template
 - 2026-09-26 15:45 — Scaffolded (hybrid-geospatial, deploy → github-pages). Directive + validation contract: directives/build_from_here.md. Prototype lives in ~/Git/.tmp/from_here.
 - 2026-09-26 16:20 — Tiles: execution/build_tiles.py builds 2,592 tiles (8.3 MB) plus docs/overview.json in ~4 s. Phone modules route/tiles/timeline/render/frames/suggest are written in ES5. node --test: 14/14. pytest: 42/42, and the golden Hour frame matches Natural Earth with only 0.28% of pixels differing. Next: watch C code, index.js, Clay config, emulator.
+- 2026-09-26 15:51 — commit: Tile pipeline, phone route/label/render modules and tests | .gitignore,directives/build_from_here.md,docs/overview.json,docs/tiles/-10_-10.json,docs/tiles/-10_-100.json
+- 2026-09-26 17:30 — Watchface complete in the emulator. Tests: pytest 42/42, node 19/19, emulator 13/13, CloudPebble simulation drops nothing. Fixed: Day tile columns, fetch burst, route clipping, south-edge row, offline home persistence. README and knowledge written. Next: verifier, then public repo and Pages.

@@ -1,0 +1,59 @@
+[
+  { "type": "heading", "defaultValue": "From Here" },
+  { "type": "text", "defaultValue": "Your location is the start. At 10:42 you are 10 degrees 42 minutes away along the direction you choose, and the face shows where that is." },
+  {
+    "type": "section",
+    "items": [
+      { "type": "heading", "defaultValue": "Direction" },
+      {
+        "type": "select",
+        "messageKey": "Setting_Direction",
+        "label": "Head",
+        "defaultValue": "8",
+        "options": [
+          { "label": "Auto (most interesting from here)", "value": "8" },
+          { "label": "North", "value": "0" },
+          { "label": "North-east", "value": "1" },
+          { "label": "East", "value": "2" },
+          { "label": "South-east", "value": "3" },
+          { "label": "South", "value": "4" },
+          { "label": "South-west", "value": "5" },
+          { "label": "West", "value": "6" },
+          { "label": "North-west", "value": "7" }
+        ]
+      },
+      { "type": "text", "defaultValue": "Directions are on the map, not a compass heading: north-east adds one degree north and one degree east every hour." }
+    ]
+  },
+  {
+    "type": "section",
+    "items": [
+      { "type": "heading", "defaultValue": "Home" },
+      { "type": "toggle", "messageKey": "Setting_UsePhone", "label": "Use phone location", "defaultValue": true },
+      { "type": "input", "messageKey": "Setting_Lat", "label": "Latitude (manual)", "defaultValue": "", "attributes": { "placeholder": "30.08", "type": "text" } },
+      { "type": "input", "messageKey": "Setting_Lon", "label": "Longitude (manual)", "defaultValue": "", "attributes": { "placeholder": "-95.42", "type": "text" } },
+      { "type": "text", "defaultValue": "Home is rounded to 0.1 degree (about 10 km) and stays on your phone." }
+    ]
+  },
+  {
+    "type": "section",
+    "items": [
+      { "type": "heading", "defaultValue": "View" },
+      {
+        "type": "select",
+        "messageKey": "Setting_Zoom",
+        "label": "Default view",
+        "defaultValue": "1",
+        "options": [
+          { "label": "Hour (about 600 km)", "value": "1" },
+          { "label": "Now (about 240 km)", "value": "0" },
+          { "label": "Day (the whole route)", "value": "2" },
+          { "label": "Globe", "value": "3" }
+        ]
+      },
+      { "type": "text", "defaultValue": "Flick your wrist to cycle Now, Hour, Day and Globe. Over open water the face zooms out to the whole day." }
+    ]
+  },
+  { "type": "text", "defaultValue": "A Globe & Atlas project. Map data: Natural Earth (public domain). Place names: GeoNames, CC BY 4.0 (geonames.org)." },
+  { "type": "submit", "defaultValue": "Save settings" }
+]

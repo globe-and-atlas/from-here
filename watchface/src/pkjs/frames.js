@@ -24,8 +24,7 @@ function build(ctx, zoom, minute, done) {
     if (zoom !== Z.DAY) {
       var etas = {};
       ctx.runs.forEach(function (r) { if (r.town && etas[r.town] === undefined) etas[r.town] = r.minute; });
-      var dot = p.xy(here.lat, here.lon);
-      var reserved = [render.insetBox(ctx.direction), [dot[0] - 8, dot[1] - 8, dot[0] + 8, dot[1] + 8]];
+      var reserved = render.reservedBoxes(ctx.origin, ctx.direction, p, minute);
       towns = render.frameTowns(ctx.cache, p, zoom, etas, reserved);
     }
     done(null, finish(ctx, zoom, p, picture, framed.validTo, towns));

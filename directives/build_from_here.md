@@ -82,3 +82,13 @@ Process:
 - Phone offline (coordinates only).
 - The day rolling over at midnight (a new timeline is requested; the dot returns home).
 - DST days (minute = local clock).
+
+## Learnings — 2026-09-26
+- **Results:**
+  - pytest: 42 passing, including a golden frame 0.28% off Natural Earth.
+  - node: 19 passing.
+  - Emulator: 13 of 13 checks.
+  - CloudPebble simulation: no files dropped.
+- **The contract's "time and coordinates offline" needs a stored home.** The watch persists home, direction and default view (persist keys 1–4).
+- **Label avoidance covers the route line** (5-minute samples), not only the dot and inset. The overlap test asserts at least 10 labels were placed, so it can't pass vacuously.
+- **Auto versus the detailed 30-city comparison:** the coarse 1° suggestion agrees for Spring, Greenwich, Madrid, Buenos Aires and Sydney. Mumbai (NE vs N) and Tromsø (SE vs S) pick a close runner-up.

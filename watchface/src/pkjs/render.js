@@ -57,13 +57,22 @@ function orthographic(center, radius, w, h) {
   };
 }
 
-// Tile keys a local frame needs (corners plus a grid across it).
+// Tile keys a map frame needs. Each pixel row is one latitude with longitude linear across it, so
+// list every 5-degree column between the row's ends (near the poles one row can span the globe).
 function keysForFrame(projection) {
   var keys = {};
-  for (var gy = 0; gy <= 8; gy++) {
-    for (var gx = 0; gx <= 8; gx++) {
-      var ll = projection.inverse(gx * (projection.w - 1) / 8, gy * (projection.h - 1) / 8);
-      if (ll) keys[tiles.tileKey(ll[0], ll[1])] = true;
+  var w = projection.w, h = projection.h;
+  var k = Math.max(Math.cos(projection.center.lat * Math.PI / 180), 0.01);
+  var halfSpan = (w / 2) * projection.kmPerPx / (111.32 * k);
+  for (var y = 0; y <= h + 4; y += 5) {
+    var lat = projection.inverse(0, Math.min(y, h - 1))[0];
+    if (halfSpan >= 180) {
+      for (var lon = -180; lon < 180; lon += tiles.TILE_DEG) keys[tiles.tileKey(lat, lon)] = true;
+      continue;
+    }
+    var left = projection.center.lon - halfSpan, right = projection.center.lon + halfSpan;
+    for (var c = Math.floor(left / tiles.TILE_DEG) * tiles.TILE_DEG; c <= right; c += tiles.TILE_DEG) {
+      keys[tiles.tileKey(lat, wrapDeg(c + 0.001))] = true;
     }
   }
   return Object.keys(keys);
@@ -165,6 +174,19 @@ function insetBox(direction) {
   return [x - 2, y - 2, x + INSET + 2, y + INSET + 2];
 }
 
+// Areas labels must avoid: the globe inset, the dot, and the route line (5-minute samples).
+function reservedBoxes(origin, direction, projection, minute) {
+  var here = route.pointAt(origin, direction, minute);
+  var dot = projection.xy(here.lat, here.lon);
+  var boxes = [insetBox(direction), [dot[0] - 8, dot[1] - 8, dot[0] + 8, dot[1] + 8]];
+  var samples = routeSamples(origin, direction, projection);
+  for (var i = 0; i < samples.length; i += 2) {
+    var x = samples[i], y = samples[i + 1];
+    if (x > -20 && x < projection.w + 20 && y > -20 && y < projection.h + 20) boxes.push([x - 3, y - 3, x + 3, y + 3]);
+  }
+  return boxes;
+}
+
 function overlap(a, b) { return !(a[2] < b[0] || a[0] > b[2] || a[3] < b[1] || a[1] > b[3]); }
 
 // Up to limit towns inside the frame, biggest first, with no overlapping label boxes.
@@ -254,6 +276,6 @@ module.exports = {
   MAP_W: MAP_W, MAP_H: MAP_H, INSET: INSET, ZOOM: ZOOM, KIND: KIND, OFFSCREEN: OFFSCREEN,
   localProjection: localProjection, orthographic: orthographic, keysForFrame: keysForFrame,
   renderMap: renderMap, renderGlobe: renderGlobe, decodeOverview: decodeOverview, overviewAt: overviewAt,
-  routeSamples: routeSamples, insetCorner: insetCorner, insetBox: insetBox, frameTowns: frameTowns,
+  routeSamples: routeSamples, insetCorner: insetCorner, insetBox: insetBox, frameTowns: frameTowns, reservedBoxes: reservedBoxes,
   localFrame: localFrame, dayFrame: dayFrame, pack2bpp: pack2bpp, hhmm: hhmm
 };

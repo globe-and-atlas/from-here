@@ -46,19 +46,33 @@ TileCache.prototype.get = function (key) {
   return this.tiles[key] || null;
 };
 
+// At most PARALLEL fetches in flight, one retry each: a burst of 60 requests overflows phone
+// connection pools and a single dropped tile would sink the whole frame.
+var PARALLEL = 6;
+
 TileCache.prototype.ensure = function (keys, done) {
   var self = this;
-  var pending = keys.filter(function (k, i) { return !self.tiles[k] && keys.indexOf(k) === i; });
-  if (!pending.length) { done(null); return; }
-  var left = pending.length, failed = null;
-  pending.forEach(function (key) {
-    self.loader(key, function (err, tile) {
-      if (err) failed = failed || err;
-      else self.put(key, decode(tile));
-      left -= 1;
-      if (left === 0) done(failed);
-    });
-  });
+  var queue = keys.filter(function (k, i) { return !self.tiles[k] && keys.indexOf(k) === i; })
+    .map(function (k) { return { key: k, tries: 0 }; });
+  if (!queue.length) { done(null); return; }
+  var active = 0, failed = null, finished = false;
+  function next() {
+    if (finished) return;
+    if (!queue.length && active === 0) { finished = true; done(failed); return; }
+    while (active < PARALLEL && queue.length) {
+      (function (job) {
+        active += 1;
+        self.loader(job.key, function (err, tile) {
+          active -= 1;
+          if (!err) self.put(job.key, decode(tile));
+          else if (job.tries < 1) { job.tries += 1; queue.push(job); }
+          else failed = failed || err;
+          next();
+        });
+      })(queue.shift());
+    }
+  }
+  next();
 };
 
 TileCache.prototype.put = function (key, tile) {
