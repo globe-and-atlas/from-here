@@ -31,3 +31,5 @@
 - 2026-09-26 16:21 — commit: Fix verifier findings: tile pinning, frame base minute, staged frames | docs/tiles/-10_-35.json,docs/tiles/-10_-40.json,docs/tiles/-10_-45.json,docs/tiles/-10_-50.json,docs/tiles/-10_-55.json
 - 2026-09-26 16:28 — commit: Per-request tile pins; count distinct frame parts | knowledge/ERRORS.md,knowledge/SESSION.md,watchface/src/c/main.c,watchface/src/pkjs/tiles.js,watchface/test/regressions.test.js
 - 2026-09-26 19:20 — Verifier pass 3 APPROVED. Its two minor notes are fixed too: a malformed tile fails the request instead of hanging it, and getJson calls back exactly once. node 25/25. Publishing: public repo plus GitHub Pages from /docs.
+- 2026-09-26 16:29 — commit: Fail malformed tiles cleanly; single JSON callback | knowledge/SESSION.md,task.md,watchface/src/pkjs/index.js,watchface/src/pkjs/tiles.js,watchface/test/regressions.test.js
+- 2026-09-26 19:35 — Published github.com/globe-and-atlas/from-here (public, branch main; the local branch was renamed from master). Pages serves /docs; tiles verified byte-identical. Remaining: physical watch test, store upload, G&A article.

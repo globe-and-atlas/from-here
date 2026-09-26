@@ -13,8 +13,8 @@ Directive: `directives/build_from_here.md` (full validation contract there).
 - [x] Emulator checks: Hour view, flick cycle, 60 s revert, open-water Day view, offline.
 - [x] CloudPebble import simulation drops no files.
 - [x] A fresh verifier approves (three passes; approved 2026-09-26 after fixes).
-- [ ] `globe-and-atlas/from-here` is public on GitHub.
-- [ ] GitHub Pages serves `docs/` (tiles reachable at the Pages URL).
+- [x] `globe-and-atlas/from-here` is public on GitHub.
+- [x] GitHub Pages serves `docs/`; tiles verified byte-identical at https://globe-and-atlas.github.io/from-here/.
 - [ ] Tested on a physical Pebble Time 2: legibility, flick, battery over a day.
 
 ## Next
