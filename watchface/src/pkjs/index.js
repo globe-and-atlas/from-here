@@ -12,7 +12,7 @@ var dev = require('./dev.json'); // emulator-only test settings; {} in every rea
 
 var PAGES = 'https://globe-and-atlas.github.io/from-here/';
 var EMULATOR = 'http://localhost:8765/'; // python3 -m http.server 8765 --directory docs
-var CHUNK = 2000; // frame bytes per AppMessage; watchface.c uses the same value
+var CHUNK = 1000; // frame bytes per AppMessage; watchface.c uses the same value
 var AUTO = 8;
 var DEV_HOME = { lat: 30.08, lon: -95.42 }; // emulator only, when it has no location
 
@@ -86,25 +86,34 @@ function int16Bytes(values) {
 }
 
 function sendFrame(frame) {
-  var parts = Math.max(1, Math.ceil(frame.data.length / CHUNK));
-  for (var part = 0; part < parts; part++) {
-    var msg = {};
-    msg[keys.FrameZoom] = frame.zoom;
-    msg[keys.FramePart] = part;
-    msg[keys.FrameParts] = parts;
-    msg[keys.FrameData] = Array.prototype.slice.call(frame.data, part * CHUNK, (part + 1) * CHUNK);
-    if (part === 0) {
-      msg[keys.FrameKind] = frame.kind;
-      msg[keys.FrameW] = frame.w;
-      msg[keys.FrameH] = frame.h;
-      msg[keys.FrameValidTo] = frame.validTo;
-      msg[keys.FrameLand] = frame.landPct;
-      msg[keys.FrameRoute] = int16Bytes(frame.route);
-      msg[keys.FrameTowns] = frame.towns;
-      msg[keys.FrameCorner] = frame.corner;
-      msg[keys.FrameBase] = frame.base;
-    }
-    send(msg);
+  var dataParts = Math.max(1, Math.ceil(frame.data.length / CHUNK));
+  var totalParts = 1 + dataParts;
+
+  // Part 0: metadata only (keeps message well under 1.5 KB to avoid Bluetooth MTU drops)
+  var metaMsg = {};
+  metaMsg[keys.FrameZoom] = frame.zoom;
+  metaMsg[keys.FramePart] = 0;
+  metaMsg[keys.FrameParts] = totalParts;
+  metaMsg[keys.FrameData] = [];
+  metaMsg[keys.FrameKind] = frame.kind;
+  metaMsg[keys.FrameW] = frame.w;
+  metaMsg[keys.FrameH] = frame.h;
+  metaMsg[keys.FrameValidTo] = frame.validTo;
+  metaMsg[keys.FrameLand] = frame.landPct;
+  metaMsg[keys.FrameRoute] = int16Bytes(frame.route);
+  metaMsg[keys.FrameTowns] = frame.towns;
+  metaMsg[keys.FrameCorner] = frame.corner;
+  metaMsg[keys.FrameBase] = frame.base;
+  send(metaMsg);
+
+  // Parts 1..dataParts: 1000-byte data slices
+  for (var part = 0; part < dataParts; part++) {
+    var dataMsg = {};
+    dataMsg[keys.FrameZoom] = frame.zoom;
+    dataMsg[keys.FramePart] = part + 1;
+    dataMsg[keys.FrameParts] = totalParts;
+    dataMsg[keys.FrameData] = Array.prototype.slice.call(frame.data, part * CHUNK, (part + 1) * CHUNK);
+    send(dataMsg);
   }
 }
 
@@ -179,13 +188,20 @@ function refresh(force) {
 
 function onRequest(payload) {
   if (payload[keys.ReqTimeline] !== undefined) {
-    if (state.runs.length) sendTimeline(); else refresh();
+    if (state.runs.length) sendTimeline(); else refresh(true);
     return;
   }
-  if (payload[keys.ReqZoom] === undefined || !state.origin) return;
+  if (payload[keys.ReqZoom] === undefined) return;
+  if (!state.origin) {
+    refresh(true);
+    return;
+  }
   var ctx = { cache: cache, overview: state.overview, origin: state.origin, direction: state.direction, runs: state.runs };
   var zoom = payload[keys.ReqZoom], minute = payload[keys.ReqMinute] || 0;
-  if ((zoom === render.ZOOM.GLOBE || zoom === render.ZOOM.INSET) && !state.overview) return;
+  if ((zoom === render.ZOOM.GLOBE || zoom === render.ZOOM.INSET) && !state.overview) {
+    withOverview(function () { onRequest(payload); });
+    return;
+  }
   var ticket = state.generation;
   frames.build(ctx, zoom, minute, function (err, frame) {
     if (err) { console.log('Frame failed: ' + err.message); return; }

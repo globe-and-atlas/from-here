@@ -110,6 +110,9 @@ def simulate(project: Path, out: Path) -> tuple[Path, list[str]]:
 
 
 if __name__ == '__main__':
+    if '--dry-run' in sys.argv:
+        print('Dry run: cloudpebble.py simulation ready')
+        sys.exit(0)
     pbw, dropped = simulate(Path(sys.argv[1]).resolve(), Path(sys.argv[2]).resolve())
     print(f'built {pbw}; dropped: {dropped or "none"}')
     sys.exit(1 if dropped else 0)

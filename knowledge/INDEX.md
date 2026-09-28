@@ -1,13 +1,13 @@
 # Knowledge Index
 
-| File | Type | Summary |
-|------|------|---------|
-| [context.md](context.md) | domain | Project identity, stack, constraints |
-| [SESSION.md](SESSION.md) | log | Active work and checkpoints |
-| [DECISIONS.md](DECISIONS.md) | log | Architecture and scope decisions |
-| [ERRORS.md](ERRORS.md) | log | Errors, causes, and fixes |
+## Domain Knowledge
+- [context.md](context.md) — Project identity, hybrid-geospatial stack, and architecture
+- [domain/tiles_and_frames.md](domain/tiles_and_frames.md) — Tile, frame, and timeline formats; label placement rules; scales
 
-| [domain/tiles_and_frames.md](domain/tiles_and_frames.md) | domain | Tile, frame and timeline formats; label rules; scales (2026-09-26) |
-| [procedural/emulator_and_release.md](procedural/emulator_and_release.md) | procedural | Emulator check, local tile server, simulator quirks, release steps (2026-09-26) |
+## Procedural Knowledge
+- [procedural/emulator_and_release.md](procedural/emulator_and_release.md) — Emulator check, local tile server, simulator quirks, release steps
 
-Add domain or procedural files as real knowledge emerges.
+## Operational Logs
+- [SESSION.md](SESSION.md) — Active session log and verification checkpoints
+- [DECISIONS.md](DECISIONS.md) — Architecture and scope decisions
+- [ERRORS.md](ERRORS.md) — Errors, causes, and fixes

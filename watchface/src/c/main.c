@@ -9,7 +9,7 @@
 #define MAP_H 152
 #define PANEL_Y (MAP_Y + MAP_H)
 #define INSET 44
-#define CHUNK 2000
+#define CHUNK 1000
 #define ROUTE_SAMPLES 289
 #define OFFSCREEN (-32768)
 #define MAX_RUNS 96
@@ -196,15 +196,19 @@ static void store_part(DictionaryIterator *iter, Tuple *zoom_t) {
       strncpy(st->towns, t->value->cstring, sizeof(st->towns) - 1);
       st->towns[sizeof(st->towns) - 1] = '\0';
     }
+    st->received |= 1;
   }
   if (!st->active || st->zoom != zoom || part < 0 || part >= st->parts || part >= 32) return;
-  int total = (st->w + 3) / 4 * st->h;
-  int offset = part * CHUNK;
-  int length = data_t->length;
-  if (offset >= total) return;
-  if (offset + length > total) length = total - offset;
-  memcpy(st->data + offset, (const uint8_t *)data_t->value, length);
-  st->received |= (uint32_t)1 << part;
+  if (part > 0) {
+    int total = (st->w + 3) / 4 * st->h;
+    int offset = (part - 1) * CHUNK;
+    int length = data_t->length;
+    if (offset < total) {
+      if (offset + length > total) length = total - offset;
+      memcpy(st->data + offset, (const uint8_t *)data_t->value, length);
+    }
+    st->received |= (uint32_t)1 << part;
+  }
   uint32_t all = st->parts >= 32 ? 0xFFFFFFFFu : (((uint32_t)1 << st->parts) - 1);
   if (st->parts > 0 && (st->received & all) == all) commit_stage();
 }
@@ -262,6 +266,11 @@ static void inbox(DictionaryIterator *iter, void *context) {
 
 static void outbox_failed(DictionaryIterator *iter, AppMessageResult reason, void *context) {
   s_pending = -1;
+}
+
+static void inbox_dropped(AppMessageResult reason, void *context) {
+  s_pending = -1;
+  request_needed();
 }
 
 /* ---------------- drawing ---------------- */
@@ -327,8 +336,13 @@ static void draw_towns(GContext *ctx, const Frame *f, GPoint origin) {
 static const char *current_label(int minute, char *next, size_t next_size) {
   const char *label = "";
   next[0] = '\0';
+  bool is_land = true;
   for (int i = 0; i < s_run_count; i++) {
-    if (s_runs[i].minute <= minute) { label = s_runs[i].label; continue; }
+    if (s_runs[i].minute <= minute) {
+      label = s_runs[i].label;
+      is_land = (s_runs[i].flags & 1) != 0;
+      continue;
+    }
     if (s_runs[i].flags & 2) {
       char town[LABEL_LEN];
       int n = 0;
@@ -336,6 +350,13 @@ static const char *current_label(int minute, char *next, size_t next_size) {
       town[n] = '\0';
       snprintf(next, next_size, "next %s %02d:%02d", town, s_runs[i].minute / 60, s_runs[i].minute % 60);
       break;
+    }
+  }
+  if (next[0] == '\0' && s_run_count > 0) {
+    if (is_land) {
+      snprintf(next, next_size, "open wilderness · reset 00:00");
+    } else {
+      snprintf(next, next_size, "open sea · reset 00:00");
     }
   }
   return label;
@@ -385,6 +406,19 @@ static void map_update(Layer *layer, GContext *ctx) {
     }
     static const char *scale[] = {"240 km", "600 km", "DAY", "GLOBE"};
     outlined_text(ctx, scale[view], fonts_get_system_font(FONT_KEY_GOTHIC_14), GRect(MAP_W - 64, MAP_H - 18, 60, 16), GColorWhite, GTextAlignmentRight);
+  } else {
+    static const char *scale[] = {"240 km", "600 km", "DAY", "GLOBE"};
+    graphics_context_set_text_color(ctx, GColorLightGray);
+    if (s_stage && s_stage->active && s_stage->zoom == view && s_stage->parts > 1) {
+      int count = 0;
+      for (int b = 1; b < s_stage->parts; b++) if (s_stage->received & ((uint32_t)1 << b)) count++;
+      char progress[32];
+      snprintf(progress, sizeof(progress), "loading map... %d/%d", count, s_stage->parts - 1);
+      graphics_draw_text(ctx, progress, fonts_get_system_font(FONT_KEY_GOTHIC_14), GRect(0, MAP_H / 2 - 10, MAP_W, 20), GTextOverflowModeTrailingEllipsis, GTextAlignmentCenter, NULL);
+    } else {
+      graphics_draw_text(ctx, "loading map...", fonts_get_system_font(FONT_KEY_GOTHIC_14), GRect(0, MAP_H / 2 - 10, MAP_W, 20), GTextOverflowModeTrailingEllipsis, GTextAlignmentCenter, NULL);
+    }
+    graphics_draw_text(ctx, scale[view], fonts_get_system_font(FONT_KEY_GOTHIC_14), GRect(MAP_W - 64, MAP_H - 18, 60, 16), GTextOverflowModeTrailingEllipsis, GTextAlignmentRight, NULL);
   }
 }
 
@@ -481,10 +515,12 @@ static void init(void) {
   s_stage = malloc(sizeof(Stage));
   if (s_stage) s_stage->active = false;
   app_message_register_inbox_received(inbox);
+  app_message_register_inbox_dropped(inbox_dropped);
   app_message_register_outbox_failed(outbox_failed);
   app_message_open(app_message_inbox_size_maximum(), 128);
   tick_timer_service_subscribe(MINUTE_UNIT, ticked);
   accel_tap_service_subscribe(tapped);
+  request_needed();
 }
 
 static void deinit(void) {

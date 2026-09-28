@@ -33,6 +33,15 @@ Design decisions (user, 2026-09-25/26):
   - auto-zoom to Day when the current frame is under 5% land;
   - with no phone data, shows the time plus the coordinates only.
 
+## Tools
+
+| Script | Purpose |
+|---|---|
+| `execution/build_tiles.py` | Build global 5°×5° raster tiles and `docs/overview.json` |
+| `execution/emulator_check.py` | Automated QEMU emulator validation (Hour, cycle, revert, water, offline) |
+| `execution/cloudpebble.py` | Simulate CloudPebble GitHub import and compilation |
+| `execution/evaluate.py` | Evaluation harness for prompt or parameter optimization |
+
 ## Validation Contract (2026-09-26)
 Route and labels:
 - [ ] `route.pointAt(origin, dir, minute)` equals origin + H°M′ along the direction for all 8 directions (unit test).

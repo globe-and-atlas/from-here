@@ -164,8 +164,12 @@ def scenario_offline(results: dict, server: Server) -> None:
 
 def main() -> int:
     ap = argparse.ArgumentParser()
+    ap.add_argument("--dry-run", action="store_true", help="print dry-run message and exit 0")
     ap.add_argument("--only", nargs="*", default=["hour", "cycle", "revert", "water", "offline"])
     args = ap.parse_args()
+    if args.dry_run:
+        print("Dry run: emulator_check.py ready (scenarios: hour, cycle, revert, water, offline)")
+        return 0
     results: dict[str, bool] = {}
     original = DEV.read_text() if DEV.exists() else "{}\n"
     try:

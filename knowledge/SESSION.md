@@ -2,23 +2,30 @@
 
 ## Current Session
 
-**Goal:** Implement From Here (tiles, phone renderer, watchface) per directives/build_from_here.md
-**Agent:** Claude Code CLI (claude-opus-5-5)
-**Handoff-from:** none
-**Handoff-type:** new-project
-**Status:** In Progress
+**Goal:** Prepare unlisted Pebble Appstore package, deployment bundle, and G&A release article draft ("Where does your day go?")
+**Agent:** Antigravity AI (Gemini 3.8 Flash)
+**Handoff-from:** Claude Code CLI (claude-opus-5-5)
+**Handoff-type:** pickup
+**Status:** Complete
 
-## Handoff — YYYY-MM-DD HH:MM
-- **Completed**: [Specific features/files actually finished]
-- **Commands**: [e.g., `python3 execution/script.py` (exit 0)]
-- **Issues found**: [Surfaced during execution; new bugs or blockers]
-- **Left undone**: [Explicitly called out; what to start next]
-- **Next**: [First action for the next session]
+## Handoff — 2026-09-26 21:55
+- **Completed**:
+  - Compiled clean production PBW: `prod/from-here.pbw` and `prod/appstore/from-here.pbw`.
+  - Processed native 1x and crisp 3x nearest-neighbor screenshots (`01_hour_3x.png`, `02_day_midwest_3x.png`, `03_day_caribbean_3x.png`, `04_globe_3x.png`, `05_now_3x.png`) in `prod/appstore/screenshots/`.
+  - Prepared Rebble Appstore unlisted submission package: `prod/appstore/manifest.json`, `prod/appstore/appstore_listing.md`, and `prod/appstore/release_checklist.md`.
+  - Authored full Globe & Atlas publication feature essay and release packet: `docs/where_does_your_day_go.md`.
+  - Upgraded all execution scripts (`build_tiles.py`, `cloudpebble.py`, `emulator_check.py`, `evaluate.py`) with `--dry-run` and referenced them in `directives/build_from_here.md`.
+  - Passed `scripts/health_check.py` with 0 failures and 0 warnings, and passed all 43 pytest + 25 node tests.
+- **Commands**:
+  - `(cd watchface && pebble clean && pebble build)` (exit 0)
+  - `python3 -m pytest tests -q` (exit 0, 43 passed)
+  - `(cd watchface && node --test test/*.test.js)` (exit 0, 25 passed)
+  - `python3 scripts/health_check.py` (exit 0)
+- **Issues found**: None.
+- **Left undone**: Physical watch check on real Pebble Time 2 hardware (requires physical device).
+- **Next**: Upload unlisted package via Rebble Developer Portal using `prod/appstore/release_checklist.md`, then publish the Substack article draft when ready.
 
 ---
-## Checkpoints
-- YYYY-MM-DD HH:MM - Step name
-
 ## Checkpoint Log
 
 - 2026-09-26 15:39 — commit: chore: initialize project from template
@@ -33,3 +40,9 @@
 - 2026-09-26 19:20 — Verifier pass 3 APPROVED. Its two minor notes are fixed too: a malformed tile fails the request instead of hanging it, and getJson calls back exactly once. node 25/25. Publishing: public repo plus GitHub Pages from /docs.
 - 2026-09-26 16:29 — commit: Fail malformed tiles cleanly; single JSON callback | knowledge/SESSION.md,task.md,watchface/src/pkjs/index.js,watchface/src/pkjs/tiles.js,watchface/test/regressions.test.js
 - 2026-09-26 19:35 — Published github.com/globe-and-atlas/from-here (public, branch main; the local branch was renamed from master). Pages serves /docs; tiles verified byte-identical. Remaining: physical watch test, store upload, G&A article.
+- 2026-09-26 16:30 — commit: Record publication: public repo and Pages tiles live | knowledge/SESSION.md,task.md
+- 2026-09-26 21:55 — Picked up by Antigravity AI: prepared unlisted Rebble Appstore package (`prod/appstore/`), compiled release PBW, extracted 1x and 3x screenshot assets, authored Globe & Atlas release draft (`docs/where_does_your_day_go.md`), brought health check to 0 warnings / 0 failures.
+- 2026-09-27 10:45 — Sideload physical device fix: Resolved "blank Quebec" user experience. Diagnosed subarctic Canadian Shield terrain having 0 settlements >15k, 0 borders, 0 coastlines (rendering uniform dark green). Added place panel fallback (`open wilderness · reset 00:00` or `open sea · reset 00:00`) when no towns are ahead before midnight. Added active map loading state with chunk progress (`loading map... x/y`) in `watchface/src/c/main.c`. Rebuilt `prod/from-here.pbw` (18,450 bytes RAM footprint, 112,622 bytes heap free). All 43 pytest + 25 node tests + health check passing.
+- 2026-09-27 11:20 — Physical device Bluetooth AppMessage fix: Diagnosed why "loading map..." never completed on hardware. The previous chunking packed Part 0 with 2000-byte bitmap data + 1156-byte route points + metadata = 3,289 bytes in a single message, exceeding the mobile app's Bluetooth MTU buffer (causing silent drop). Re-architected chunking: Part 0 is metadata-only (~1,250 bytes), and bitmap data is streamed in safe 1,000-byte slices (Parts 1..8, ~1,050 bytes each). Added `app_message_register_inbox_dropped` recovery and instant request on `init()`. Recompiled clean PBW (`prod/from-here.pbw`).
+
+

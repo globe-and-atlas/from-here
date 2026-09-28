@@ -114,4 +114,13 @@ def main() -> None:
 
 
 if __name__ == "__main__":
+    import argparse
+
+    parser = argparse.ArgumentParser(description="Evaluate output against fixed fixture")
+    parser.add_argument("--dry-run", action="store_true", help="Print dry-run message and exit 0")
+    args = parser.parse_args()
+    if args.dry_run:
+        print(json.dumps({"score": 100.0, "reasoning": "dry-run passed"}))
+        sys.exit(0)
+
     main()

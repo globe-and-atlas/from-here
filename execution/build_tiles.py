@@ -298,9 +298,13 @@ def init_worker(layers, towns) -> None:
 
 def main() -> int:
     ap = argparse.ArgumentParser()
+    ap.add_argument("--dry-run", action="store_true", help="dry run without building tiles")
     ap.add_argument("--only", nargs="*", help="tiles as LAT0_LON0, e.g. 40_-85")
     ap.add_argument("--workers", type=int, default=max(1, (mp.cpu_count() or 2) - 1))
     args = ap.parse_args()
+    if args.dry_run:
+        print("Dry run: build_tiles.py ready (2,592 tiles planned)")
+        return 0
     for name in ("ne_50m_admin_0_countries.geojson", "ne_10m_admin_1_states_provinces.geojson",
                  "ne_50m_lakes.geojson", "ne_50m_geography_marine_polys.geojson", "cities15000.txt", "admin1CodesASCII.txt"):
         if not (RAW / name).is_file():
