@@ -14,6 +14,8 @@ Your location is the start. At 10:42 you are 10 degrees 42 minutes away along th
 
 ## Install
 
+- [Pebble Appstore](https://apps.rePebble.com/d9fc15a8f87746b7ba01f6ca)
+
 - [Open in CloudPebble](https://cloudpebble.repebble.com/ide/import/github/globe-and-atlas/from-here/main): the branch is in the link because CloudPebble's import defaults to `master`. Rename the project in the dialog.
 - Or build locally (see Development) and `pebble install --phone <ip>`.
 
