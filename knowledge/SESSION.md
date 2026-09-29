@@ -2,11 +2,11 @@
 
 ## Current Session
 
-**Goal:** Prepare unlisted Pebble Appstore package, deployment bundle, and G&A release article draft ("Where does your day go?")
-**Agent:** Antigravity AI (Gemini 3.8 Flash)
-**Handoff-from:** Claude Code CLI (claude-opus-5-5)
+**Goal:** Refresh the From Here and Straight Ahead RePebble dashboard thumbnails
+**Agent:** OpenAI Codex (Codex desktop)
+**Handoff-from:** Antigravity AI
 **Handoff-type:** pickup
-**Status:** Complete
+**Status:** Complete — From Here’s 80×80 and 144×144 RePebble thumbnail icons are saved and visible on its dashboard card.
 
 ## Handoff — 2026-09-26 21:55
 - **Completed**:
@@ -58,3 +58,5 @@
 - 2026-09-29 12:55 — Claude Code CLI: hardware "loading map..." fix — phone now reads request keys by name or number (payload.js); part 0 no longer depends on an empty FrameData. node 28/28, pytest 43/43, emulator 13/13, build clean; prod/from-here.pbw rebuilt. UNVERIFIED on hardware; creator-verifier sub-agent not run.
 - 2026-09-29 13:10 — Owner confirmed the fix on the physical watch (CloudPebble sideload): map loads. Version 0.1.2 built; pushing to GitHub and uploading to the store.
 - 2026-09-29 13:00 — commit: docs: store thumbnail refresh notes | knowledge/INDEX.md,knowledge/procedural/emulator_and_release.md,task.md
+- 2026-09-29 13:00 — commit: fix: 0.1.2 — map stuck on "loading map..." on hardware | knowledge/ERRORS.md,knowledge/SESSION.md,watchface/package-lock.json,watchface/package.json,watchface/src/c/main.c
+- 2026-09-29 13:05 — Pushed 4e436e9 to globe-and-atlas/from-here; 0.1.2 published to the store via `pebble publish` (live, 5 screenshots kept). Procedure recorded in procedural/emulator_and_release.md.

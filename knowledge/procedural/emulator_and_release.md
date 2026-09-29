@@ -21,3 +21,10 @@ timestamp: "2026-09-26T17:30:00-05:00"
 - Preserve the full 200×228 watch screen on a black square canvas; do not crop away labels.
 - Supply `prod/appstore/icons/thumbnail-80.png` and `thumbnail-144.png` to the dashboard's Small and Large Icon inputs.
 - Save the listing, return to the dashboard, and verify that its app card displays the new thumbnail.
+
+## Store release from the CLI (2026-09-29)
+
+- Bump `version` in `watchface/package.json` and `package-lock.json`. The store rejects a version it already has.
+- From `watchface/`: `pebble publish --is-published --no-gif-all-platforms --non-interactive --release-notes "..."`. `--no-gif-all-platforms` keeps the curated screenshots; without it the tool captures emulator GIFs and appends them.
+- Check: `curl -s "https://appstore-api.repebble.com/api/v1/apps/id/d9fc15a8f87746b7ba01f6ca?nocache=$RANDOM"` → `latest_release.version`. The un-busted URL can serve a cached old version for a while.
+- Hardware sideload: `pebble install --cloudpebble build/watchface.pbw --logs`.
