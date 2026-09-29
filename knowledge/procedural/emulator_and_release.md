@@ -14,3 +14,10 @@ timestamp: "2026-09-26T17:30:00-05:00"
 - **Pixel check limits:** the pixel checks are coarse. Always look at the screenshots too.
 - **Before publishing:** run `python3 execution/cloudpebble.py watchface .tmp/cloudpebble_sim`. It must report "dropped: none".
 - **Pages:** GitHub Pages serves `/docs` from `main`. `docs/.nojekyll` makes it serve the files as-is.
+
+## Dashboard thumbnail assets
+
+- Use the current app render (`execution/render_store.py` output) as the store thumbnail source.
+- Preserve the full 200×228 watch screen on a black square canvas; do not crop away labels.
+- Supply `prod/appstore/icons/thumbnail-80.png` and `thumbnail-144.png` to the dashboard's Small and Large Icon inputs.
+- Save the listing, return to the dashboard, and verify that its app card displays the new thumbnail.

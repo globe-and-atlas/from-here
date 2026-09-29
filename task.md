@@ -27,3 +27,9 @@ Directive: `directives/build_from_here.md` (full validation contract).
 ## Next
 - [ ] Physical watch check: legibility, flick gesture, and battery life over 24 hours
 - [ ] Final upload to Rebble Developer Portal using unlisted link
+## Store Thumbnail Refresh — 2026-09-29
+- [x] 80×80 dashboard icon exists at `prod/appstore/icons/thumbnail-80.png`.
+- [x] 144×144 dashboard icon exists at `prod/appstore/icons/thumbnail-144.png`.
+- [x] Both icons preserve the complete current render from `prod/appstore/screenshots/04_globe.png`.
+- [x] RePebble dashboard shows the saved app thumbnail.
+
