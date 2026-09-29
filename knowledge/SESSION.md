@@ -51,3 +51,10 @@
 - 2026-09-27 20:55 — commit: fix: physical-watch map loading and empty-wilderness panel | directives/build_from_here.md,execution/build_tiles.py,execution/cloudpebble.py,execution/emulator_check.py,execution/evaluate.py
 - 2026-09-27 21:00 — Claude Code CLI: gates rerun on Antigravity's hardware fixes (pytest 43, node 25, CloudPebble dropped none, emulator 13/13 after `pebble wipe`); committed 84291a8-amended (drafts in docs/ and prod/ binaries kept out — docs/ is public via Pages); appstore 0.1.0 submitted as DRAFT: https://apps.rePebble.com/d9fc15a8f87746b7ba01f6ca. Not pushed to GitHub yet.
 - 2026-09-28 — Claude Code CLI: store screenshots re-shot from the current build (execution/render_store.py, public downtown-Houston home): uploaded set was inconsistent (mixed homes), showed the pre-fix route drawn over the panel, and omitted Day + open-water. 0.1.1 published publicly with 5 screenshots (owner-approved).
+- 2026-09-28 11:42 — commit: chore: 0.1.1 — store screenshots from the current build | execution/render_store.py,knowledge/SESSION.md,watchface/package.json
+- 2026-09-28 11:42 — commit: chore: lockfile version 0.1.1 | watchface/package-lock.json
+- 2026-09-28 11:44 — commit: docs: appstore link | README.md
+- 2026-09-29 — Refreshed RePebble app thumbnails: generated 80×80 and 144×144 square icons from `prod/appstore/screenshots/04_globe.png`, uploaded both sizes, and saved the listing. Dashboard card visibly displays the new thumbnail.
+- 2026-09-29 12:55 — Claude Code CLI: hardware "loading map..." fix — phone now reads request keys by name or number (payload.js); part 0 no longer depends on an empty FrameData. node 28/28, pytest 43/43, emulator 13/13, build clean; prod/from-here.pbw rebuilt. UNVERIFIED on hardware; creator-verifier sub-agent not run.
+- 2026-09-29 13:10 — Owner confirmed the fix on the physical watch (CloudPebble sideload): map loads. Version 0.1.2 built; pushing to GitHub and uploading to the store.
+- 2026-09-29 13:00 — commit: docs: store thumbnail refresh notes | knowledge/INDEX.md,knowledge/procedural/emulator_and_release.md,task.md

@@ -27,3 +27,10 @@ Not fixed (cosmetic, logged):
 - **Overlapping tile loads unpinned each other.** There was a single shared pin set, so a second load during a slow 210-tile Day load evicted the first load's tiles. Fix: per-key pin counts, released after the caller's synchronous draw returns, then trimmed back to the limit. Test: a Day frame drawn while another route loads matches a no-eviction reference (fails with the shared-pin bug reinstated).
 - **A duplicated part completed a frame early.** Fix: a received-parts bitmask instead of a counter.
 - **Memory:** decoded tiles drop their JSON rows, and pins release after each load, so the cache returns to its limit.
+
+## 2026-09-29: map stuck on "loading map..." on a real watch
+- **Symptom:** time, coordinates and place panel shown; map never leaves plain "loading map..." (no x/y count, so part 0 was never staged).
+- **Likely cause:** `onRequest` read watch requests only by numeric key (`payload[keys.ReqZoom]`). Phone apps may key `e.payload` by name (`ReqZoom`), so every frame request was ignored. The timeline still arrived because the phone pushes it on `ready`. The emulator (pypkjs) keys by number, so all gates passed.
+- **Also:** part 0 sent `FrameData: []` and the watch dropped any part without FrameData; an empty byte array is fragile across phone apps. Part 0 no longer sends it and the watch no longer needs it.
+- **Fix:** `src/pkjs/payload.js` `field()` reads number, name, or numeric string. Test: `test/payload.test.js`. The 2026-09-27 "Bluetooth MTU" theory did not fix the hardware symptom.
+- **Not yet confirmed on hardware.**

@@ -8,6 +8,7 @@ var timeline = require('./timeline');
 var render = require('./render');
 var frames = require('./frames');
 var suggest = require('./suggest');
+var field = require('./payload').field;
 var dev = require('./dev.json'); // emulator-only test settings; {} in every real build
 
 var PAGES = 'https://globe-and-atlas.github.io/from-here/';
@@ -94,7 +95,6 @@ function sendFrame(frame) {
   metaMsg[keys.FrameZoom] = frame.zoom;
   metaMsg[keys.FramePart] = 0;
   metaMsg[keys.FrameParts] = totalParts;
-  metaMsg[keys.FrameData] = [];
   metaMsg[keys.FrameKind] = frame.kind;
   metaMsg[keys.FrameW] = frame.w;
   metaMsg[keys.FrameH] = frame.h;
@@ -187,17 +187,18 @@ function refresh(force) {
 }
 
 function onRequest(payload) {
-  if (payload[keys.ReqTimeline] !== undefined) {
+  if (field(payload, keys, 'ReqTimeline') !== undefined) {
     if (state.runs.length) sendTimeline(); else refresh(true);
     return;
   }
-  if (payload[keys.ReqZoom] === undefined) return;
+  var zoom = field(payload, keys, 'ReqZoom'), minute = field(payload, keys, 'ReqMinute') || 0;
+  if (zoom === undefined) return;
+  zoom = Number(zoom); minute = Number(minute);
   if (!state.origin) {
     refresh(true);
     return;
   }
   var ctx = { cache: cache, overview: state.overview, origin: state.origin, direction: state.direction, runs: state.runs };
-  var zoom = payload[keys.ReqZoom], minute = payload[keys.ReqMinute] || 0;
   if ((zoom === render.ZOOM.GLOBE || zoom === render.ZOOM.INSET) && !state.overview) {
     withOverview(function () { onRequest(payload); });
     return;

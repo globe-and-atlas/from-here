@@ -166,9 +166,10 @@ static void store_part(DictionaryIterator *iter, Tuple *zoom_t) {
   int zoom = zoom_t->value->int32;
   Tuple *part_t = dict_find(iter, MESSAGE_KEY_FramePart);
   Tuple *data_t = dict_find(iter, MESSAGE_KEY_FrameData);
-  if (!s_stage || zoom < 0 || zoom >= ZOOM_COUNT || !part_t || !data_t) return;
+  if (!s_stage || zoom < 0 || zoom >= ZOOM_COUNT || !part_t) return;
   Stage *st = s_stage;
   int part = part_t->value->int32;
+  if (part > 0 && !data_t) return; /* part 0 is metadata only */
   if (part == 0) {
     Tuple *t;
     st->active = true;
